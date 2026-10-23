@@ -1,36 +1,53 @@
 # W1: Registro y activación de billetera de prueba
 
 Como cliente o comercio,
-quiero registrarme e ingresar de forma segura desde mi celular o computadora,
+quiero registrarme e ingresar de forma segura desde una web que se adapte a mi celular o computadora responsivo para cualquier dispositivo,
 para consultar mis billeteras de prueba cuando mi cuenta esté activa.
 
 Estado: propuesta para revisión; todavía no implementada.
 
 ## Criterios de aceptación
 
-1. La web funciona en smartphone y computadora, sin instalar una app, con pasos guiados y mensajes claros.
-2. El registro solicita rol cliente o comercio, correo, celular peruano y DNI para cliente o RUC para comercio.
-3. Se validan datos obligatorios y formatos en pantalla y servidor: DNI de ocho dígitos, RUC de once con dígito verificador y celular de nueve que empieza con 9, normalizado con +51. Los errores indican qué corregir.
-4. Correo, celular y documento son únicos por titular. Si cualquiera existe, se rechaza el registro sin duplicar, modificar ni vincular cuentas, incluso ante solicitudes simultáneas. Se normalizan los datos antes de comparar y no se revela qué dato existe.
-5. Se ingresa con correo y contraseña, DNI y contraseña para cliente, Google o una passkey registrada. DNI y RUC no son contraseñas; el RUC no permite ingresar. Los errores son genéricos y se limitan los intentos.
-6. Google permite registrarse e ingresar sin otra contraseña de wallet, completando los datos faltantes y recuperando siempre la misma cuenta. Usa OpenID Connect/OAuth2 con PKCE y validación del proveedor; no verifica DNI/RUC ni activa la cuenta automáticamente.
-7. La opción «Ingresar con passkey» permite usar rostro, huella o PIN del dispositivo tras registrar la credencial con reautenticación. El servidor valida la respuesta WebAuthn antes de abrir sesión; la wallet no guarda biometría. Si falla, se cancela o no es compatible, se ofrece otro método registrado sin crear sesión.
-8. La verificación de identidad (KYC) es simulada: comienza en PENDING y puede resolverse como ACTIVE o REJECTED mediante un control exclusivo de demo. El resultado se conserva; solo ACTIVE habilita billeteras. Los demás estados pueden ingresar y consultar su situación, con un mensaje claro de bloqueo.
-9. Existe una cuenta de acceso por DNI o RUC, con una billetera inicial y otras asociadas al mismo titular. Solo ACTIVE permite añadirlas, listarlas o seleccionarlas, con alias distintos y hasta el máximo configurable, sin crear otros usuarios ni dejar registros parciales.
-10. El titular elige un límite positivo en PEN, con hasta dos decimales y sin superar el máximo del producto; si lo omite se usa ese máximo. Se muestra y conserva, es compartido entre sus billeteras y no aumenta al crear otra ni agrega dinero.
-11. Todos los métodos generan un JWT propio para la API por HTTPS, válido solo cinco minutos desde el ingreso, sin renovación automática. El servidor valida firma, emisor, destinatario, vigencia y sesión en cada petición; no acepta tokens de Google como acceso propio. Al vencer exige ingresar otra vez; cerrar sesión revoca inmediatamente incluso las copias del token. Vencer la sesión no cambia el estado ACTIVE de la cuenta.
-12. Cada usuario solo accede a sus datos y billeteras, con permisos comprobados por el servidor. Token inválido, vencido o revocado recibe 401; una sesión válida sin permiso recibe 403. Contraseñas con hash, tokens solo en memoria del navegador y secretos fuera del repositorio; no se exponen datos sensibles en tokens ni registros.
-13. La demo usa datos ficticios, sin KYC real, consultas RENIEC/SUNAT ni envío real de SMS o correos. La simulación de Google y el autenticador virtual se identifican como pruebas, no integraciones reales. Validar formato no acredita identidad ni propiedad.
-14. Se registran inicio, pasos, resultado y primera activación con fecha e identificador interno, sin datos personales. No se duplican activaciones ni se cuentan pendientes o rechazos como exitosos.
-15. W1 solo prepara cuentas y permite consultar billeteras. Pagos y cambios de saldo, incluida la aplicación monetaria del límite, corresponden a W2/W3. No incluye recuperación de contraseña, vinculación de Google con cuentas locales, cambio de rol o límites, representantes múltiples, transferencia de billeteras, reapertura de KYC rechazado ni ingreso con celular/OTP.
+1. La web se adapta a cualquier dispositivo sin instalar una aplicación. El registro muestra los pasos, el avance y qué hacer después.
+
+2. Al registrarse se distingue entre persona como cliente, identificada con DNI, y empresa como comercio, identificada con RUC. Ambos deben proporcionar correo y celular peruano; el registro sin Google también pide contraseña.
+
+3. Los datos obligatorios deben estar completos y tener formato válido: DNI de ocho dígitos, RUC de once con dígito de control válido y celular de nueve que empieza con 9, con código de país +51. Si hay errores, no se avanza y se explica qué corregir.
+
+4. Cada DNI o RUC identifica a un solo titular. Correo y celular tampoco pueden repetirse en otro registro; se comparan con un formato uniforme. Un intento duplicado no crea ni modifica cuentas, aunque lleguen dos solicitudes a la vez, y no revela datos de otros usuarios.
+
+5. La verificación de identidad es de prueba: la cuenta comienza pendiente (PENDING) y puede quedar activa (ACTIVE) o rechazada (REJECTED). El resultado se conserva y solo una cuenta activa accede a sus billeteras. Las demás pueden ingresar para ver su situación y el motivo de bloqueo; el ingreso normal no permite cambiar ese resultado.
+
+6. Se ingresa con correo y contraseña para ambos perfiles, o DNI y contraseña para cliente. También se puede usar Google o el acceso del dispositivo previamente habilitado. DNI y RUC no son contraseñas; el RUC no sirve para ingresar. Los intentos fallidos se limitan y el mensaje no revela si existe una cuenta.
+
+7. Google permite registrarse e ingresar sin crear otra contraseña para la billetera. La primera vez se completan los datos faltantes y después se recupera la misma cuenta; no se vinculan cuentas automáticamente. Google no verifica DNI o RUC ni activa la cuenta. Si se cancela o falla, no se crea una cuenta ni una sesión y se permite reintentar.
+
+8. Después de confirmar su identidad con un método de ingreso existente, el usuario puede habilitar el acceso con rostro, huella o PIN del dispositivo, según compatibilidad. Este acceso permite iniciar sesión sin escribir la contraseña de la billetera; no se guardan fotos, huellas ni datos del rostro. Si falla o no está disponible, se ofrece otro método ya habilitado.
+
+9. Toda sesión dura como máximo cinco minutos desde el ingreso, aunque se siga usando la web. No se renueva automáticamente; al vencer se debe ingresar otra vez. Cerrar sesión corta el acceso de inmediato. La cuenta sigue activa aunque termine la sesión.
+
+10. Cada titular tiene una cuenta de acceso y una billetera inicial. Cuando está activo puede crear y consultar otras billeteras propias, con nombres distintos y hasta la cantidad permitida, todas asociadas a su mismo DNI o RUC. No necesita registrarse nuevamente ni puede consultar billeteras ajenas.
+
+11. El titular puede elegir un límite en soles mayor que cero, con hasta dos decimales y sin superar el máximo del producto. Si no elige uno, se usa el máximo. El límite se muestra y conserva, es compartido por sus billeteras y no aumenta al crear otra; no representa dinero disponible.
+
+12. El sistema comprueba en cada acceso que la sesión sea válida y que la información pertenezca al usuario. Las contraseñas y los datos de acceso se protegen y no se muestran ni se incluyen en registros de seguimiento.
+
+13. La demostración usa datos ficticios, sin verificar documentos reales ni consultar RENIEC, SUNAT o proveedores de identidad, y sin enviar mensajes o correos reales. Las simulaciones se identifican claramente como pruebas: un formato válido no demuestra que una identidad sea real.
+
+14. Se registra cuándo empieza el registro, qué pasos se completan y cuál es el resultado, sin guardar datos personales en ese seguimiento. La primera activación se cuenta una sola vez; las cuentas pendientes o rechazadas no se cuentan como activadas.
+
+15. W1 prepara cuentas y permite consultar billeteras de prueba; los pagos y cambios de saldo corresponden a W2/W3, incluida la aplicación del límite a esas operaciones. No incluye recuperación de contraseña, unión de cuentas de Google con otras cuentas, cambio de perfil o límites, varios representantes por comercio, traspaso de billeteras, reapertura de cuentas rechazadas ni ingreso con celular o códigos por SMS.
 
 ## Contexto
 
 1. Épica: [MVP de wallet en Perú](../epic/peru-wallet-mvp.sp.md). W1 prepara las cuentas para W2/W3.
-2. Objetivos de lanzamiento: bajar el onboarding de 8 a 3 minutos, MAU de 1,000 a 2,000 y CAC de PEN 10 en meses 1-3. Requieren medir actividad y gasto reales; activar una cuenta no demuestra MAU ni CAC.
+
+2. Objetivos de lanzamiento: reducir el registro de 8 a 3 minutos, mantener entre 1,000 y 2,000 usuarios activos al mes y un costo de adquisición de PEN 10 por nuevo usuario en los primeros tres meses. Se verifican con actividad y gastos reales, no solo con esta demostración.
 
 ## Supuestos y decisiones pendientes
 
-1. Aprobar los valores propuestos para demo: PEN 1,000.00 y hasta tres billeteras por titular. Definir si el límite aplica a saldo, operación o acumulado; no son máximos regulatorios.
-2. Confirmar reglas de contraseña, límite de intentos y revisión humana del KYC (HITL).
-3. Confirmar Google real con cuentas de prueba autorizadas o simulado, y los eventos de inicio y fin para medir el onboarding.
+1. Aprobar el máximo propuesto de PEN 1,000.00 y hasta tres billeteras por titular para la demostración. Definir si el límite aplica al saldo, a cada operación o al total de un período; no son máximos legales.
+
+2. Confirmar las reglas de contraseña, cuántos intentos fallidos se permiten y quién decide si la verificación de prueba se aprueba o rechaza.
+
+3. Confirmar si Google se conecta con cuentas de prueba autorizadas o se simula, y desde qué momento hasta cuál se mide la duración del registro.
