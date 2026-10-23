@@ -1,0 +1,12 @@
+services:
+  identity-onboarding-api:
+    build:
+      context: ../services/identity-onboarding-api
+      dockerfile: Dockerfile
+    environment:
+      KYC_MOCK_BASE_URL: ${KYC_MOCK_BASE_URL:-https://bcp-wallet-mock.yefri.workers.dev/groups/3}
+      IDENTITY_CORS_ORIGINS: ${IDENTITY_CORS_ORIGINS:-http://localhost:4200}
+      IDENTITY_OPERATOR_KEY: ${IDENTITY_OPERATOR_KEY:-disabled}
+    ports:
+      - "127.0.0.1:${IDENTITY_API_PORT:-8081}:8080"
+    restart: unless-stopped

@@ -1,0 +1,86 @@
+{
+  "info": {
+    "_postman_id": "6ee35d77-3ba7-4ff9-9a34-08a3a7d6ca41",
+    "name": "Identity Onboarding API - W1",
+    "description": "Pruebas del adaptador local para los cuatro endpoints KYC de W1. Crear KYC escribe en el estado compartido del grupo configurado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "kycId", "value": "" },
+    { "key": "walletId", "value": "" },
+    { "key": "operatorKey", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health local",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/health"
+      }
+    },
+    {
+      "name": "Crear verificación KYC",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const data = pm.response.json();",
+              "  pm.collectionVariables.set('kycId', data.id);",
+              "  pm.collectionVariables.set('walletId', data.wallet_id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"documentType\": \"TEST\",\n  \"document\": \"TEST-{{$guid}}\",\n  \"scenario\": \"MANUAL_REVIEW\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/v1/kyc/verifications"
+      }
+    },
+    {
+      "name": "Consultar verificación",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/kyc/verifications/{{kycId}}"
+      }
+    },
+    {
+      "name": "Consultar wallet creada por KYC",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/wallets/{{walletId}}"
+      }
+    },
+    {
+      "name": "Resolver revisión humana",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Operator-Key", "value": "{{operatorKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"decision\": \"ACTIVE\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/v1/kyc/verifications/{{kycId}}/decision"
+      }
+    }
+  ]
+}
