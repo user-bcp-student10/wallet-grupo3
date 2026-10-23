@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#7b2fe0">
+    <title>Billetera Perú | Modo prueba</title>
+    <link rel="stylesheet" href="vendor/primeng/themes/lara-wallet/theme.css">
+    <link rel="stylesheet" href="vendor/primeng/primeng.min.css">
+    <link rel="stylesheet" href="vendor/material-icons/material-icons.css">
+    <link rel="stylesheet" href="vendor/sweetalert2/sweetalert2.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="vendor/sweetalert2/sweetalert2.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Saltar al contenido</a>
+
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Billetera Perú, inicio">
+        <span class="brand-mark"><span class="material-icons" aria-hidden="true">account_balance_wallet</span></span>
+        <span>Billetera <span class="brand-light">Perú</span></span>
+      </a>
+      <div class="topbar-end">
+        <span class="p-tag p-component test-tag"><span class="material-icons" aria-hidden="true">science</span>Modo prueba</span>
+        <div id="session-bar" class="session-bar" hidden>
+          <span id="session-chip" class="session-chip">
+            <span class="material-icons" aria-hidden="true">timer</span>
+            <span id="session-summary" role="status"></span>
+          </span>
+          <button id="logout-button" class="p-button p-component p-button-sm p-button-text btn-on-dark" type="button">
+            <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">logout</span>
+            <span class="p-button-label">Salir</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="inicio" class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Grupo 3 · Wallet Perú</p>
+        <h1 id="page-title">Paga y cobra<br>sin complicarte.</h1>
+        <p class="hero-copy">Crea una cuenta de prueba, ingresa y envía pagos a personas o comercios. Tu sesión vence a los 5 minutos y no se renueva sola.</p>
+        <ul class="feature-list">
+          <li><span class="material-icons" aria-hidden="true">bolt</span>Pago a contacto</li>
+          <li><span class="material-icons" aria-hidden="true">receipt_long</span>Comprobante</li>
+          <li><span class="material-icons" aria-hidden="true">history</span>Historial</li>
+        </ul>
+        <div class="p-message p-component p-message-warn hero-note" role="note">
+          <div class="p-message-wrapper">
+            <span class="material-icons p-message-icon" aria-hidden="true">shield</span>
+            <div class="p-message-text"><strong>Usa solo datos TEST.</strong> No ingreses documentos, teléfonos ni contraseñas reales.</div>
+          </div>
+        </div>
+        <div class="wallet-card" aria-hidden="true">
+          <div class="wallet-card-top">
+            <span class="material-icons">contactless</span>
+            <span class="wallet-card-brand">Billetera Perú</span>
+          </div>
+          <p class="wallet-card-number">TEST 0000 0000 0000</p>
+          <div class="wallet-card-bottom">
+            <span>Cuenta de prueba</span>
+            <strong>PEN</strong>
+          </div>
+        </div>
+      </section>
+
+      <section id="app" class="app-card" aria-label="Billetera de prueba">
+        <div class="p-tabview p-component">
+          <div class="p-tabview-nav-container">
+            <div class="p-tabview-nav-content">
+              <ul class="p-tabview-nav" role="tablist" aria-label="Acceso a la billetera">
+                <li class="p-tabview-header p-highlight" role="presentation">
+                  <button class="p-tabview-nav-link mode-tab" id="register-tab" type="button" role="tab" aria-selected="true" aria-controls="register-panel" data-mode="register">
+                    <span class="material-icons" aria-hidden="true">person_add</span><span class="p-tabview-title">Crear cuenta</span>
+                  </button>
+                </li>
+                <li class="p-tabview-header" role="presentation">
+                  <button class="p-tabview-nav-link mode-tab" id="login-tab" type="button" role="tab" aria-selected="false" aria-controls="login-panel" data-mode="login" tabindex="-1">
+                    <span class="material-icons" aria-hidden="true">login</span><span class="p-tabview-title">Ingresar</span>
+                  </button>
+                </li>
+                <li class="p-tabview-header" role="presentation">
+                  <button class="p-tabview-nav-link mode-tab" id="payment-tab" type="button" role="tab" aria-selected="false" aria-controls="payment-panel" data-mode="payment" tabindex="-1">
+                    <span class="material-icons" aria-hidden="true">payments</span><span class="p-tabview-title">Pagar</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="p-tabview-panels">
+            <section id="register-panel" class="p-tabview-panel panel" role="tabpanel" aria-labelledby="register-tab">
+              <header class="panel-head">
+                <p class="panel-eyebrow">Nueva cuenta</p>
+                <h2>Cuéntanos de ti</h2>
+              </header>
+
+              <div class="p-steps p-component" aria-label="Pasos del registro">
+                <ul>
+                  <li class="p-steps-item p-highlight" aria-current="step"><span class="p-menuitem-link"><span class="p-steps-number">1</span><span class="p-steps-title">Perfil</span></span></li>
+                  <li class="p-steps-item"><span class="p-menuitem-link"><span class="p-steps-number">2</span><span class="p-steps-title">Acceso</span></span></li>
+                  <li class="p-steps-item"><span class="p-menuitem-link"><span class="p-steps-number">3</span><span class="p-steps-title">Estado</span></span></li>
+                </ul>
+              </div>
+
+              <form id="register-form" novalidate>
+                <fieldset class="field">
+                  <legend>Tipo de cuenta</legend>
+                  <div class="seg" role="radiogroup" aria-label="Tipo de cuenta">
+                    <label class="seg-option"><input type="radio" name="role" value="person" checked><span><span class="material-icons" aria-hidden="true">person</span>Persona</span></label>
+                    <label class="seg-option"><input type="radio" name="role" value="merchant"><span><span class="material-icons" aria-hidden="true">storefront</span>Comercio</span></label>
+                  </div>
+                </fieldset>
+
+                <div class="form-grid">
+                  <div class="field field-wide">
+                    <label id="document-label" for="document">DNI ficticio</label>
+                    <div class="input-icon">
+                      <span class="material-icons" aria-hidden="true">badge</span>
+                      <input id="document" name="document" class="p-inputtext p-component" type="text" autocomplete="off" inputmode="text" placeholder="TEST-12345678" aria-describedby="document-hint document-error" required>
+                    </div>
+                    <small id="document-hint" class="p-hint">TEST- seguido de 8 dígitos. No uses un documento real.</small>
+                    <small id="document-error" class="p-error" role="alert"></small>
+                  </div>
+                  <div class="field">
+                    <label for="email">Correo electrónico</label>
+                    <div class="input-icon">
+                      <span class="material-icons" aria-hidden="true">mail</span>
+                      <input id="email" name="email" class="p-inputtext p-component" type="email" autocomplete="off" placeholder="demo@example.test" aria-describedby="email-error" required>
+                    </div>
+                    <small id="email-error" class="p-error" role="alert"></small>
+                  </div>
+                  <div class="field">
+                    <label for="phone">Celular peruano</label>
+                    <div class="input-icon">
+                      <span class="material-icons" aria-hidden="true">smartphone</span>
+                      <input id="phone" name="phone" class="p-inputtext p-component" type="tel" autocomplete="off" inputmode="tel" placeholder="+51 912 345 678" aria-describedby="phone-hint phone-error" required>
+                    </div>
+                    <small id="phone-hint" class="p-hint">9 dígitos que empiecen en 9.</small>
+                    <small id="phone-error" class="p-error" role="alert"></small>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="password">Contraseña de prueba</label>
+                    <div class="input-icon has-toggle">
+                      <span class="material-icons" aria-hidden="true">lock</span>
+                      <input id="password" name="password" class="p-inputtext p-component" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" aria-describedby="password-hint password-error" required>
+                      <button class="toggle-visibility p-button p-component p-button-icon-only p-button-rounded p-button-text p-button-secondary" type="button" data-target="password" aria-label="Mostrar contraseña">
+                        <span class="material-icons p-button-icon" aria-hidden="true">visibility</span>
+                      </button>
+                    </div>
+                    <small id="password-hint" class="p-hint">Usa una contraseña ficticia; se guarda cifrada.</small>
+                    <small id="password-error" class="p-error" role="alert"></small>
+                  </div>
+                </div>
+
+                <button class="p-button p-component btn-gradient btn-block" type="submit">
+                  <span class="p-button-label">Crear cuenta de prueba</span>
+                  <span class="material-icons p-button-icon p-button-icon-right" aria-hidden="true">arrow_forward</span>
+                </button>
+                <div class="divider"><span>o</span></div>
+                <button class="p-button p-component p-button-outlined p-button-secondary btn-block" type="button" disabled aria-describedby="google-note">
+                  <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">account_circle</span>
+                  <span class="p-button-label">Continuar con Google</span>
+                  <span class="p-tag p-component p-tag-secondary ml-auto">No conectado</span>
+                </button>
+                <small id="google-note" class="p-hint center">Google no está integrado en este prototipo.</small>
+              </form>
+            </section>
+
+            <section id="login-panel" class="p-tabview-panel panel" role="tabpanel" aria-labelledby="login-tab" hidden>
+              <header class="panel-head">
+                <p class="panel-eyebrow">Acceso de prueba</p>
+                <h2>Qué bueno verte</h2>
+              </header>
+
+              <form id="login-form" novalidate>
+                <fieldset class="field">
+                  <legend>Ingresas como</legend>
+                  <div class="seg" role="radiogroup" aria-label="Rol de ingreso">
+                    <label class="seg-option"><input type="radio" name="login-role" value="person" checked><span><span class="material-icons" aria-hidden="true">person</span>Persona</span></label>
+                    <label class="seg-option"><input type="radio" name="login-role" value="merchant"><span><span class="material-icons" aria-hidden="true">storefront</span>Comercio</span></label>
+                  </div>
+                </fieldset>
+
+                <div class="form-grid single">
+                  <div class="field">
+                    <label id="login-identifier-label" for="login-identifier">DNI ficticio o correo</label>
+                    <div class="input-icon">
+                      <span class="material-icons" aria-hidden="true">badge</span>
+                      <input id="login-identifier" name="login-identifier" class="p-inputtext p-component" type="text" autocomplete="off" placeholder="TEST-12345678 o demo@example.test" aria-describedby="login-identifier-hint login-identifier-error" required>
+                    </div>
+                    <small id="login-identifier-hint" class="p-hint">Usa el código TEST o el correo de tu cuenta.</small>
+                    <small id="login-identifier-error" class="p-error" role="alert"></small>
+                  </div>
+                  <div class="field">
+                    <label for="login-password">Contraseña</label>
+                    <div class="input-icon has-toggle">
+                      <span class="material-icons" aria-hidden="true">lock</span>
+                      <input id="login-password" name="login-password" class="p-inputtext p-component" type="password" autocomplete="current-password" placeholder="Tu contraseña" aria-describedby="login-password-error" required>
+                      <button class="toggle-visibility p-button p-component p-button-icon-only p-button-rounded p-button-text p-button-secondary" type="button" data-target="login-password" aria-label="Mostrar contraseña">
+                        <span class="material-icons p-button-icon" aria-hidden="true">visibility</span>
+                      </button>
+                    </div>
+                    <small id="login-password-error" class="p-error" role="alert"></small>
+                  </div>
+                </div>
+
+                <button class="p-button p-component btn-gradient btn-block" type="submit">
+                  <span class="p-button-label">Ingresar</span>
+                  <span class="material-icons p-button-icon p-button-icon-right" aria-hidden="true">arrow_forward</span>
+                </button>
+                <div class="divider"><span>o</span></div>
+                <button class="p-button p-component p-button-outlined p-button-secondary btn-block" type="button" disabled>
+                  <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">account_circle</span>
+                  <span class="p-button-label">Continuar con Google</span>
+                  <span class="p-tag p-component p-tag-secondary ml-auto">No conectado</span>
+                </button>
+              </form>
+            </section>
+
+            <section id="payment-panel" class="p-tabview-panel panel" role="tabpanel" aria-labelledby="payment-tab" hidden>
+              <section class="balance-card" aria-label="Saldo de wallet-demo">
+                <div class="balance-head">
+                  <span class="balance-chip"><span class="material-icons" aria-hidden="true">account_balance_wallet</span><span id="wallet-id">wallet-demo</span></span>
+                  <span id="wallet-status" class="p-tag p-component p-tag-secondary">—</span>
+                  <button id="load-wallet" class="p-button p-component p-button-icon-only p-button-rounded p-button-text btn-on-dark" type="button" aria-label="Actualizar saldo" title="Actualizar saldo">
+                    <span class="material-icons p-button-icon" aria-hidden="true">refresh</span>
+                  </button>
+                </div>
+                <p class="balance-label">Disponible</p>
+                <p id="wallet-available" class="balance-amount" aria-live="polite">S/ —</p>
+                <dl class="balance-meta">
+                  <div><dt>Saldo</dt><dd id="wallet-balance">—</dd></div>
+                  <div><dt>Reservado</dt><dd id="wallet-reserved">—</dd></div>
+                </dl>
+              </section>
+
+              <form id="payment-form" novalidate>
+                <fieldset class="field">
+                  <legend>¿A quién le pagas?</legend>
+                  <div class="recipient-grid">
+                    <label class="recipient-option">
+                      <input type="radio" name="recipient" value="contact-demo" checked>
+                      <span class="recipient-card"><span class="material-icons" aria-hidden="true">person</span><strong>Persona</strong><small>contact-demo</small></span>
+                    </label>
+                    <label class="recipient-option">
+                      <input type="radio" name="recipient" value="merchant-demo">
+                      <span class="recipient-card"><span class="material-icons" aria-hidden="true">storefront</span><strong>Comercio</strong><small>merchant-demo</small></span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <div class="field">
+                  <label for="payment-amount">Monto en soles (PEN)</label>
+                  <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon">S/</span>
+                    <input id="payment-amount" name="payment-amount" class="p-inputtext p-component" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="payment-amount-hint payment-amount-error" required>
+                  </div>
+                  <div class="quick-amounts" role="group" aria-label="Montos rápidos">
+                    <button class="p-button p-component p-button-outlined p-button-rounded p-button-sm" type="button" data-amount="10.00">S/ 10</button>
+                    <button class="p-button p-component p-button-outlined p-button-rounded p-button-sm" type="button" data-amount="20.00">S/ 20</button>
+                    <button class="p-button p-component p-button-outlined p-button-rounded p-button-sm" type="button" data-amount="50.00">S/ 50</button>
+                  </div>
+                  <small id="payment-amount-hint" class="p-hint">Mayor que S/ 0.00, con máximo dos decimales y hasta tu saldo disponible.</small>
+                  <small id="payment-amount-error" class="p-error" role="alert"></small>
+                </div>
+
+                <button id="review-payment" class="p-button p-component btn-gradient btn-block" type="submit">
+                  <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">send</span>
+                  <span class="p-button-label">Revisar y pagar</span>
+                </button>
+              </form>
+
+              <section id="payment-attempt" class="attempt-card" aria-live="polite" hidden>
+                <div class="attempt-head">
+                  <span class="material-icons attempt-icon" aria-hidden="true">hourglass_top</span>
+                  <div class="attempt-text">
+                    <strong id="attempt-title">Pago en curso</strong>
+                    <small id="attempt-detail"></small>
+                  </div>
+                  <span id="attempt-status" class="p-tag p-component p-tag-warning">Pendiente</span>
+                </div>
+                <div class="attempt-actions">
+                  <button id="resolve-payment" class="p-button p-component btn-gradient" type="button" hidden>
+                    <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">sync</span>
+                    <span class="p-button-label">Consultar resultado</span>
+                  </button>
+                  <button id="retry-payment" class="p-button p-component p-button-outlined" type="button" hidden>
+                    <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">replay</span>
+                    <span class="p-button-label">Reintentar el mismo intento</span>
+                  </button>
+                </div>
+              </section>
+
+              <section id="payment-receipt" class="receipt-card" aria-live="polite" hidden>
+                <p class="panel-eyebrow"><span class="material-icons" aria-hidden="true">receipt_long</span> Comprobante de prueba</p>
+                <dl class="summary-list">
+                  <div><dt>Referencia</dt><dd id="receipt-id"></dd></div>
+                  <div><dt>Destinatario</dt><dd id="receipt-recipient"></dd></div>
+                  <div><dt>Monto</dt><dd id="receipt-amount" class="is-amount"></dd></div>
+                  <div><dt>Estado</dt><dd id="receipt-status"></dd></div>
+                </dl>
+              </section>
+
+              <section class="history" aria-labelledby="history-title">
+                <div class="history-head">
+                  <div>
+                    <p class="panel-eyebrow">Movimientos de wallet-demo</p>
+                    <h3 id="history-title">Historial de pagos</h3>
+                  </div>
+                  <button id="refresh-history" class="p-button p-component p-button-sm p-button-text" type="button">
+                    <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">refresh</span>
+                    <span class="p-button-label">Actualizar</span>
+                  </button>
+                </div>
+                <div id="payment-history" class="history-list" aria-live="polite"></div>
+              </section>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>W1 · Registro y activación · W2 · Pago a contacto</span>
+      <span>Prototipo de prueba · No es un servicio financiero</span>
+    </footer>
+  </body>
+</html>
