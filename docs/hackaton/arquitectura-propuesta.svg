@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title description">
+  <title id="title">Arquitectura propuesta — Hackatón Wallet Perú, grupo 3</title>
+  <desc id="description">Diagrama de la aplicación demo navegador, backend y mock, junto al flujo de trabajo OpenSpec, CrewAI, aprobación humana y MCP local. Los componentes no implementados aparecen con borde discontinuo.</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2878d0"/>
+    </marker>
+    <marker id="arrow-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7454c8"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#21845a"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #17243a; }
+      .title { font-size: 34px; font-weight: 700; fill: #102448; }
+      .subtitle { font-size: 17px; fill: #52647a; }
+      .lane-title { font-size: 19px; font-weight: 700; fill: #17315b; }
+      .card-title { font-size: 19px; font-weight: 700; }
+      .body { font-size: 15px; fill: #33445b; }
+      .small { font-size: 13px; fill: #516176; }
+      .tiny { font-size: 12px; fill: #516176; }
+      .label { font-size: 13px; font-weight: 700; letter-spacing: .4px; }
+      .card { fill: #ffffff; stroke: #d2dcea; stroke-width: 1.6; rx: 14; }
+      .planned { stroke: #8a6bd2; stroke-width: 2.2; stroke-dasharray: 9 6; }
+      .divider { stroke: #dce4ef; stroke-width: 1.5; }
+      .flow-blue { fill: none; stroke: #2878d0; stroke-width: 3; marker-end: url(#arrow-blue); }
+      .flow-violet { fill: none; stroke: #7454c8; stroke-width: 3; marker-end: url(#arrow-violet); }
+      .flow-green { fill: none; stroke: #21845a; stroke-width: 2.6; marker-end: url(#arrow-green); }
+      .flow-dashed { stroke-dasharray: 8 6; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1120" fill="#f5f8fc"/>
+  <rect x="0" y="0" width="1600" height="145" fill="#ffffff"/>
+  <text x="64" y="67" class="title">Wallet Perú · Arquitectura propuesta</text>
+  <text x="66" y="103" class="subtitle">Hackatón · Grupo 3 · Diseño objetivo para la demo, no estado implementado</text>
+  <rect x="1280" y="46" width="250" height="38" rx="19" fill="#fff3d7"/>
+  <circle cx="1302" cy="65" r="6" fill="#d18a11"/>
+  <text x="1317" y="70" class="label" fill="#85570a">PROPUESTA / PENDIENTE</text>
+
+  <!-- Application runtime lane -->
+  <rect x="48" y="171" width="1504" height="414" rx="20" fill="#eaf3ff"/>
+  <text x="78" y="211" class="lane-title">A · Aplicación de demo — flujo de dinero determinista, sin intervención de un LLM</text>
+  <text x="78" y="237" class="small">El mock del grupo 3 es la fuente de verdad para KYC, pagos, saldo, proveedor, callbacks, ledger y conciliación.</text>
+
+  <!-- Browser -->
+  <rect x="83" y="278" width="330" height="248" class="card"/>
+  <rect x="83" y="278" width="330" height="12" rx="8" fill="#3182ce"/>
+  <text x="108" y="321" class="card-title">Web responsive</text>
+  <text x="108" y="350" class="label" fill="#2878d0">NAVEGADOR</text>
+  <line x1="108" y1="365" x2="388" y2="365" class="divider"/>
+  <text x="108" y="393" class="body">• Registro / activación (W1)</text>
+  <text x="108" y="420" class="body">• Pagos y comprobante (W2)</text>
+  <text x="108" y="447" class="body">• Pago QR (W3)</text>
+  <text x="108" y="474" class="body">• Comercio y operaciones (W5–W6)</text>
+  <text x="108" y="503" class="small">No conoce ni invoca la URL del mock.</text>
+
+  <!-- Backend -->
+  <rect x="620" y="278" width="400" height="248" class="card planned"/>
+  <rect x="620" y="278" width="400" height="12" rx="8" fill="#7454c8"/>
+  <text x="646" y="321" class="card-title">Backend adaptador</text>
+  <text x="646" y="350" class="label" fill="#7454c8">POR IMPLEMENTAR</text>
+  <line x1="646" y1="365" x2="994" y2="365" class="divider"/>
+  <text x="646" y="393" class="body">• Valida y traduce contratos</text>
+  <text x="646" y="420" class="body">• Llama al mock fijo del grupo 3</text>
+  <text x="646" y="447" class="body">• Maneja errores y estados pendientes</text>
+  <text x="646" y="474" class="body">• Funciones propias solo si se aprueban</text>
+  <text x="646" y="503" class="small">No crea saldo, pagos ni ledger paralelos.</text>
+
+  <!-- Mock -->
+  <rect x="1212" y="278" width="300" height="248" class="card"/>
+  <rect x="1212" y="278" width="300" height="12" rx="8" fill="#21845a"/>
+  <text x="1238" y="321" class="card-title">Mock Wallet · Grupo 3</text>
+  <text x="1238" y="350" class="label" fill="#21845a">API HTTP EXISTENTE</text>
+  <line x1="1238" y1="365" x2="1486" y2="365" class="divider"/>
+  <text x="1238" y="393" class="body">KYC · wallets · pagos · QR</text>
+  <text x="1238" y="420" class="body">Eventos · callbacks · reversos</text>
+  <text x="1238" y="447" class="body">Soporte · ledger · conciliación</text>
+  <text x="1238" y="483" class="small">Solo datos TEST</text>
+  <text x="1238" y="506" class="tiny">bcp-wallet-mock.yefri.workers.dev/groups/3</text>
+
+  <path d="M 413 391 L 607 391" class="flow-blue"/>
+  <text x="463" y="374" class="small">HTTPS / API propia</text>
+  <path d="M 1020 391 L 1198 391" class="flow-green"/>
+  <text x="1053" y="374" class="small">HTTP / OpenAPI mock</text>
+  <path d="M 1198 449 L 1020 449" class="flow-green"/>
+  <text x="1052" y="473" class="small">Respuesta real / error</text>
+  <path d="M 607 449 L 413 449" class="flow-blue"/>
+
+  <rect x="485" y="536" width="615" height="31" rx="15" fill="#fff2ed" stroke="#f0c3b5"/>
+  <text x="509" y="557" class="small" fill="#8f3f27">Idempotencia, pago pendiente y timeout se resuelven con el estado real del mock; no con el modelo.</text>
+
+  <!-- Agent workflow lane -->
+  <rect x="48" y="610" width="1504" height="435" rx="20" fill="#f1edfb"/>
+  <text x="78" y="650" class="lane-title">B · Flujo de trabajo — OpenSpec + CrewAI + aprobación humana + MCP local</text>
+  <text x="78" y="676" class="small">Construye y verifica la demo; es independiente de las llamadas financieras de la web.</text>
+
+  <!-- OpenSpec -->
+  <rect x="83" y="714" width="330" height="253" class="card planned"/>
+  <rect x="83" y="714" width="330" height="12" rx="8" fill="#d18a11"/>
+  <text x="108" y="758" class="card-title">OpenSpec + fuentes</text>
+  <text x="108" y="787" class="label" fill="#a66d0a">ESTRUCTURA POR CONFIGURAR</text>
+  <line x1="108" y1="802" x2="388" y2="802" class="divider"/>
+  <text x="108" y="830" class="body">Épica + seis historias</text>
+  <text x="108" y="857" class="body">Criterios de aceptación</text>
+  <text x="108" y="884" class="body">proposal → specs → design → tasks</text>
+  <text x="108" y="911" class="body">apply → implementación / evidencia</text>
+  <text x="108" y="943" class="small">Copilot: workflows en .github/ según init</text>
+
+  <!-- CrewAI + HITL -->
+  <rect x="620" y="714" width="400" height="253" class="card planned"/>
+  <rect x="620" y="714" width="400" height="12" rx="8" fill="#7454c8"/>
+  <text x="646" y="758" class="card-title">CrewAI · secuencial</text>
+  <text x="646" y="787" class="label" fill="#7454c8">RUNNER POR IMPLEMENTAR</text>
+  <line x1="646" y1="802" x2="994" y2="802" class="divider"/>
+  <text x="646" y="830" class="body">Product Owner → Arquitecto/a</text>
+  <text x="646" y="857" class="body">→ AI Engineer → QA &amp; Security</text>
+  <text x="646" y="884" class="body">→ Presenter / Timekeeper</text>
+  <rect x="646" y="904" width="348" height="43" rx="10" fill="#fff4d8" stroke="#e4c16a"/>
+  <text x="664" y="931" class="label" fill="#805813">PAUSA · aprobación humana del alcance</text>
+  <path d="M 736 973 C 710 1000 664 1000 644 972" fill="none" stroke="#d18a11" stroke-width="2" marker-end="url(#arrow-violet)"/>
+  <text x="757" y="1001" class="tiny">Rechazo/ajuste no inicia implementación</text>
+
+  <!-- MCP -->
+  <rect x="1212" y="714" width="300" height="253" class="card planned"/>
+  <rect x="1212" y="714" width="300" height="12" rx="8" fill="#21845a"/>
+  <text x="1238" y="758" class="card-title">MCP local</text>
+  <text x="1238" y="787" class="label" fill="#21845a">SERVIDOR POR IMPLEMENTAR</text>
+  <line x1="1238" y1="802" x2="1486" y2="802" class="divider"/>
+  <text x="1238" y="830" class="body">Herramientas de consulta para</text>
+  <text x="1238" y="857" class="body">agentes CrewAI:</text>
+  <text x="1238" y="884" class="body">• escenarios</text>
+  <text x="1238" y="911" class="body">• wallet / pago</text>
+  <text x="1238" y="943" class="small">No procesa pagos ni sirve a la web.</text>
+
+  <path d="M 413 838 L 607 838" class="flow-violet flow-dashed"/>
+  <text x="465" y="819" class="small">Fuentes + specs aprobadas</text>
+  <path d="M 1020 838 L 1198 838" class="flow-violet flow-dashed"/>
+  <text x="1064" y="819" class="small">Herramientas de solo lectura</text>
+  <path d="M 1198 905 C 1138 1058 1025 1056 1022 918" class="flow-green flow-dashed"/>
+  <text x="1041" y="1023" class="tiny">Consulta HTTP del MCP al mock (no operaciones financieras)</text>
+
+  <!-- Legend -->
+  <line x1="82" y1="1081" x2="135" y2="1081" stroke="#2878d0" stroke-width="3"/>
+  <text x="148" y="1086" class="small">Flujo de la aplicación</text>
+  <line x1="380" y1="1081" x2="433" y2="1081" stroke="#7454c8" stroke-width="3" stroke-dasharray="8 6"/>
+  <text x="446" y="1086" class="small">Flujo de agentes / piezas pendientes</text>
+  <rect x="786" y="1069" width="25" height="22" rx="4" fill="#ffffff" stroke="#8a6bd2" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="822" y="1086" class="small">Borde discontinuo = pendiente de implementar</text>
+  <text x="1282" y="1086" class="tiny">Hackatón · Grupo 3</text>
+</svg>
