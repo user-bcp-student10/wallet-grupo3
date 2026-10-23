@@ -1,22 +1,22 @@
 # Idempotencia en pagos
 
-Como analista de operaciones y confiabilidad,
+como analista de operaciones y confiabilidad (rol interno sin ingreso a la billetera),
 quiero que los intentos de pago duplicados se manejen con comportamiento idempotente,
 para evitar duplicidad financiera y desvíos en conciliación cuando hay reintentos.
 
 ## Criterios de aceptación
 
-1. Cada intento de pago se envía con una clave de idempotencia única por pagador, monto, destino y ventana de intento.
-2. Una solicitud repetida con la misma clave de idempotencia devuelve el resultado original y no crea una nueva transacción financiera.
-3. Los eventos de solicitud duplicada se registran con identificadores de solicitud y identificadores de correlación para auditoría.
-4. Las salidas de conciliación distinguen claramente intentos originales de reintentos duplicados.
+1. Cada intento de pago (W2 y pagos QR de deuda) se crea con una clave de idempotencia única (`transacciones.clave_idempotencia`) ligada a cliente, documento, destino, monto y moneda.
+2. Una solicitud repetida con la misma clave y los mismos datos devuelve el resultado original y no crea una nueva transacción ni mueve saldos; con datos distintos se rechaza.
+3. Cada solicitud o evento duplicado se registra en `log_transacciones` con motivo `DUPLICADO` y su identificador de correlación para auditoría.
+4. Las salidas de conciliación distinguen el intento original de los reintentos duplicados mediante esos registros `DUPLICADO`.
 
 ## Contexto
 
 - Épica: [MVP de wallet en Perú](../epic/peru-wallet-mvp.sp.md).
+- Aplica a [W2](./payer-low-value-payment-confirmation.sp.md) y a [Pagos QR de documentos de deuda](./merchant-qr-payment-status-visibility.sp.md), que comparten tablas y estados; el contrato del log está en esta última.
 - El riesgo de idempotencia está documentado explícitamente con comportamiento de payload duplicado en la evidencia del ecosistema.
-- Las condiciones multirriel exigen controles transaccionales consistentes, independientemente del camino de procesamiento subyacente.
 
 ## Preguntas abiertas
 
-- ¿Cuál es la ventana de retención de claves de idempotencia para el MVP por canal?
+- ¿Cuál es la ventana de retención de claves de idempotencia para el MVP?
