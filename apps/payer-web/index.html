@@ -49,7 +49,7 @@
         <div class="p-message p-component p-message-warn hero-note" role="note">
           <div class="p-message-wrapper">
             <span class="material-icons p-message-icon" aria-hidden="true">shield</span>
-            <div class="p-message-text"><strong>Usa solo datos TEST.</strong> No ingreses documentos, teléfonos ni contraseñas reales.</div>
+            <div class="p-message-text"><strong>Usa solo datos de prueba.</strong> No ingreses documentos, teléfonos ni contraseñas reales.</div>
           </div>
         </div>
         <div class="wallet-card" aria-hidden="true">
@@ -115,12 +115,12 @@
 
                 <div class="form-grid">
                   <div class="field field-wide">
-                    <label id="document-label" for="document">DNI ficticio</label>
+                    <label id="document-label" for="document">DNI</label>
                     <div class="input-icon">
                       <span class="material-icons" aria-hidden="true">badge</span>
-                      <input id="document" name="document" class="p-inputtext p-component" type="text" autocomplete="off" inputmode="text" placeholder="TEST-12345678" aria-describedby="document-hint document-error" required>
+                      <input id="document" name="document" class="p-inputtext p-component" type="text" autocomplete="off" inputmode="numeric" maxlength="8" placeholder="12345678" aria-describedby="document-hint document-error" required>
                     </div>
-                    <small id="document-hint" class="p-hint">TEST- seguido de 8 dígitos. No uses un documento real.</small>
+                    <small id="document-hint" class="p-hint">8 dígitos. No uses un documento real.</small>
                     <small id="document-error" class="p-error" role="alert"></small>
                   </div>
                   <div class="field">
@@ -185,12 +185,12 @@
 
                 <div class="form-grid single">
                   <div class="field">
-                    <label id="login-identifier-label" for="login-identifier">DNI ficticio o correo</label>
+                    <label id="login-identifier-label" for="login-identifier">DNI o correo</label>
                     <div class="input-icon">
                       <span class="material-icons" aria-hidden="true">badge</span>
-                      <input id="login-identifier" name="login-identifier" class="p-inputtext p-component" type="text" autocomplete="off" placeholder="TEST-12345678 o demo@example.test" aria-describedby="login-identifier-hint login-identifier-error" required>
+                      <input id="login-identifier" name="login-identifier" class="p-inputtext p-component" type="text" autocomplete="off" placeholder="12345678 o demo@example.test" aria-describedby="login-identifier-hint login-identifier-error" required>
                     </div>
-                    <small id="login-identifier-hint" class="p-hint">Usa el código TEST o el correo de tu cuenta.</small>
+                    <small id="login-identifier-hint" class="p-hint">Tu DNI de 8 dígitos o el correo de tu cuenta.</small>
                     <small id="login-identifier-error" class="p-error" role="alert"></small>
                   </div>
                   <div class="field">
@@ -237,19 +237,20 @@
               </section>
 
               <form id="payment-form" novalidate>
-                <fieldset class="field">
-                  <legend>¿A quién le pagas?</legend>
-                  <div class="recipient-grid">
-                    <label class="recipient-option">
-                      <input type="radio" name="recipient" value="contact-demo" checked>
-                      <span class="recipient-card"><span class="material-icons" aria-hidden="true">person</span><strong>Persona</strong><small>contact-demo</small></span>
-                    </label>
-                    <label class="recipient-option">
-                      <input type="radio" name="recipient" value="merchant-demo">
-                      <span class="recipient-card"><span class="material-icons" aria-hidden="true">storefront</span><strong>Comercio</strong><small>merchant-demo</small></span>
-                    </label>
+                <div class="field">
+                  <label for="recipient-number">¿A quién le pagas?</label>
+                  <div class="input-icon">
+                    <span class="material-icons" aria-hidden="true">dialpad</span>
+                    <input id="recipient-number" name="recipient" class="p-inputtext p-component" type="tel" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="Celular, DNI o RUC" aria-describedby="recipient-hint recipient-result recipient-error" required>
                   </div>
-                </fieldset>
+                  <small id="recipient-hint" class="p-hint">Celular de 9 dígitos, DNI de 8 o RUC de 11 de una cuenta activa.</small>
+                  <div id="recipient-result" class="recipient-result" role="status" hidden>
+                    <span id="recipient-result-icon" class="material-icons" aria-hidden="true">person</span>
+                    <span class="recipient-result-text"><strong id="recipient-result-label"></strong><small>Cuenta encontrada</small></span>
+                    <span class="material-icons recipient-result-check" aria-hidden="true">check_circle</span>
+                  </div>
+                  <small id="recipient-error" class="p-error" role="alert"></small>
+                </div>
 
                 <div class="field">
                   <label for="payment-amount">Monto en soles (PEN)</label>
@@ -301,6 +302,12 @@
                   <div><dt>Monto</dt><dd id="receipt-amount" class="is-amount"></dd></div>
                   <div><dt>Estado</dt><dd id="receipt-status"></dd></div>
                 </dl>
+                <div class="receipt-actions">
+                  <button id="download-receipt" class="p-button p-component btn-gradient" type="button">
+                    <span class="material-icons p-button-icon p-button-icon-left" aria-hidden="true">picture_as_pdf</span>
+                    <span class="p-button-label">Descargar PDF</span>
+                  </button>
+                </div>
               </section>
 
               <section class="history" aria-labelledby="history-title">

@@ -17,14 +17,14 @@ import server
 
 PERSON = {
     "role": "person",
-    "document": "TEST-12345678",
+    "document": "12345678",
     "email": "Ana@Example.test",
     "phone": "+51 912 345 678",
     "password": "clave-ficticia",
 }
 MERCHANT = {
     "role": "merchant",
-    "document": "TEST-20123456786",
+    "document": "20123456786",
     "email": "tienda@example.test",
     "phone": "987654321",
     "password": "clave-comercio",
@@ -54,21 +54,40 @@ class AccountStoreTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_register_normalizes_data_and_hashes_password(self):
-        account = self.store.register(PERSON, fake_kyc)
+        token, account = self.store.register(PERSON, fake_kyc)
 
         self.assertEqual(account["email"], "ana@example.test")
+        self.assertEqual(account["document"], "12345678")
         self.assertEqual(account["status"], "ACTIVE")
         self.assertNotIn("password", json.dumps(account))
+        self.assertIsNotNone(self.store.get_session(token))
         with closing(sqlite3.connect(self.db_path)) as db:
             phone, stored = db.execute("SELECT phone, password_hash FROM accounts").fetchone()
         self.assertEqual(phone, "+51912345678")
         self.assertNotIn(PERSON["password"], stored)
         self.assertTrue(stored.startswith("scrypt$"))
 
+    def test_document_prefix_is_tolerated_but_not_stored(self):
+        _, account = self.store.register({**PERSON, "document": "test-12345678"}, fake_kyc)
+
+        self.assertEqual(account["document"], "12345678")
+
+    def test_migrates_legacy_documents_with_test_prefix(self):
+        with closing(sqlite3.connect(self.db_path)) as db, db:
+            db.execute(
+                "INSERT INTO accounts (role, document, email, phone, password_hash, kyc_id, wallet_id, status, created_at) "
+                "VALUES ('person', 'TEST-11112222', 'a@b.test', '+51911111111', 'x', 'k', 'w', 'ACTIVE', 0)"
+            )
+
+        auth.AccountStore(self.db_path, clock=self.clock)
+
+        with closing(sqlite3.connect(self.db_path)) as db:
+            self.assertEqual(db.execute("SELECT document FROM accounts").fetchone()[0], "11112222")
+
     def test_rejects_invalid_registration_without_calling_kyc(self):
         calls = []
         for field, value in (
-            ("document", "12345678"),
+            ("document", "1234567"),
             ("email", "sin-arroba"),
             ("phone", "812345678"),
             ("password", "corta"),
@@ -77,7 +96,7 @@ class AccountStoreTests(unittest.TestCase):
                 self.store.register({**PERSON, field: value}, lambda doc: calls.append(doc))
             self.assertEqual(raised.exception.status, 400)
         with self.assertRaises(auth.AuthError):
-            self.store.register({**MERCHANT, "document": "TEST-20123456787"}, lambda doc: calls.append(doc))
+            self.store.register({**MERCHANT, "document": "20123456787"}, lambda doc: calls.append(doc))
         self.assertEqual(calls, [])
 
     def test_duplicate_document_email_or_phone_is_rejected_generically(self):
@@ -175,6 +194,7 @@ class AuthEndpointTests(unittest.TestCase):
     def fake_mock(self, method, path, payload=None, idempotency_key=None):
         self.mock_calls.append((method, path))
         if (method, path) == ("POST", "/kyc/verifications"):
+            self.kyc_payload = payload
             return 201, {"id": "kyc_1", "wallet_id": "wallet_1", "scenario": "APPROVED", "status": "ACTIVE"}
         if method == "GET" and path.startswith("/wallets/"):
             return 200, {"id": "wallet_1", "status": "ACTIVE"}
@@ -201,7 +221,7 @@ class AuthEndpointTests(unittest.TestCase):
         connection.close()
         return response.status, json.loads(raw) if raw else {}, set_cookie
 
-    def login_cookie(self, role="person", identifier="TEST-12345678", password="clave-ficticia"):
+    def login_cookie(self, role="person", identifier="12345678", password="clave-ficticia"):
         status, _, set_cookie = self.call(
             "POST", "/api/auth/login", {"role": role, "identifier": identifier, "password": password}
         )
@@ -212,10 +232,14 @@ class AuthEndpointTests(unittest.TestCase):
         status, _, _ = self.call("GET", "/api/wallets/wallet-demo")
         self.assertEqual(status, 401)
 
-        status, account, _ = self.call("POST", "/api/auth/register", PERSON)
+        status, account, register_cookie = self.call("POST", "/api/auth/register", PERSON)
         self.assertEqual((status, account["status"]), (201, "ACTIVE"))
-        status, duplicate, _ = self.call("POST", "/api/auth/register", PERSON)
-        self.assertEqual((status, duplicate), (409, {"error": "REGISTRATION_REJECTED"}))
+        self.assertEqual(account["sessionSecondsLeft"], 300)
+        self.assertEqual(self.kyc_payload["document"], "TEST-12345678")
+        status, me, _ = self.call("GET", "/api/auth/me", cookie=register_cookie.split(";", 1)[0])
+        self.assertEqual((status, me["document"]), (200, "12345678"))
+        status, duplicate, duplicate_cookie = self.call("POST", "/api/auth/register", PERSON)
+        self.assertEqual((status, duplicate, duplicate_cookie), (409, {"error": "REGISTRATION_REJECTED"}, None))
         self.assertEqual(self.mock_calls.count(("POST", "/kyc/verifications")), 1)
 
         status, error, set_cookie = self.call(
@@ -235,7 +259,7 @@ class AuthEndpointTests(unittest.TestCase):
         cookie = set_cookie.split(";", 1)[0]
 
         status, me, _ = self.call("GET", "/api/auth/me", cookie=cookie)
-        self.assertEqual((status, me["document"]), (200, "TEST-12345678"))
+        self.assertEqual((status, me["document"]), (200, "12345678"))
         self.assertNotIn("password", json.dumps(me))
         status, _, _ = self.call("GET", "/api/wallets/wallet-demo", cookie=cookie)
         self.assertNotEqual(status, 401)

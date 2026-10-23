@@ -27,6 +27,16 @@ y 5 intentos fallidos bloquean 5 minutos. Registrar una cuenta crea una
 verificación KYC en el mock compartido del grupo. Wallet, historial y pagos
 exigen sesión, y solo un cliente con cuenta `ACTIVE` puede pagar.
 
+El pago se dirige por número, no por un destino fijo: `POST /api/recipients/resolve`
+(`{"identifier"}`) busca una cuenta activa por celular, DNI o RUC y devuelve solo
+un rótulo enmascarado (`Cliente · celular ••• ••• 222`); 10 consultas fallidas
+bloquean 5 minutos y no se puede pagar a uno mismo. `POST /api/payments` acepta
+`recipientNumber` (no junto con `recipient`), lo resuelve de nuevo en el servidor
+y lo traduce a `contact-demo` o `merchant-demo`, los únicos destinos del mock. El
+rótulo se guarda localmente por pago y se muestra en historial, comprobante y
+PDF (`GET /api/payments/{id}/receipt.pdf`). Limitación: el mock no acredita saldo
+a la cuenta destino; el número solo identifica el destinatario dentro de esta app.
+
 Ejecuta las pruebas del adapter sin hacer llamadas al mock:
 
 ```sh
