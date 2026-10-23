@@ -2,7 +2,7 @@
 
 Como cliente que paga a un comercio y como comercio que genera el QR y recibe el pago,
 quiero identificar el comercio y su documento de deuda mediante el QR, validar el monto y estado de esa deuda, ejecutar el pago autorizado mediante un mock externo y mover los saldos solo si se aprueba,
-para mostrar un resultado confiable y persistido de cada transacción, sin integrar un proveedor real ni realizar extornos en este MVP.
+para mostrar un resultado confiable y persistido de cada transacción, sin integrar un proveedor real ni realizar extornos en este MVP. Esta historia detalla el pago de persona a comercio; el pago de persona a persona está en [W2](./payer-low-value-payment-confirmation.sp.md) y comparte datos, estados y mock.
 
 ## Criterios de aceptación
 
@@ -25,10 +25,10 @@ Se utilizarán únicamente las siguientes cuatro tablas, que son el contrato de 
 |---|---|---|
 | `cuentas_individuales` | `id` (PK), `titular_id` (titular de W1), `tipo_titular` (`CLIENTE` o `COMERCIO`), `nombre_billetera`, `moneda`, `saldo_centimos`, `estado`, `creada_en` | Cada fila es una billetera de W1. Identifica la billetera del cliente que paga y la del comercio que recibe; para un comercio, `comercio_id` es su `titular_id`. `estado` admite `PENDING`, `ACTIVE` o `REJECTED`; solo `ACTIVE` paga o recibe. El saldo se debita y acredita solo con un pago `APROBADA`. |
 | `documentos_deuda` | `id` (PK), `comercio_id` (`titular_id` de un titular `COMERCIO`), `cuenta_destino_id` (FK a `cuentas_individuales.id`), `hash_qr` (único), `monto_centimos`, `moneda`, `estado`, `creada_en`, `actualizada_en` | Fuente del comercio, la billetera destino, el importe fijo y la habilitación del pago. El monto debe ser positivo y `cuenta_destino_id` debe pertenecer al comercio. Estados: `PENDIENTE`, `EN_PROCESO` y `PAGADA`. El documento se precarga y solo cambia de estado durante este flujo. |
-| `transacciones` | `id` (PK), `referencia` (única), `documento_deuda_id` (FK), `cuenta_origen_id` (FK), `cuenta_destino_id` (FK), `monto_centimos`, `moneda`, `estado_actual`, `clave_idempotencia` (única), `expira_en`, `creada_en`, `actualizada_en` | Referencia `documentos_deuda.id` y ambas billeteras en `cuentas_individuales.id`. Guarda el importe y destino obtenidos del documento, sin modificaciones posteriores. Estados: `PENDIENTE_CONFIRMACION`, `PENDIENTE`, `APROBADA`, `FALLIDA` y `EXPIRADA`. |
+| `transacciones` | `id` (PK), `referencia` (única), `modalidad_pago` (`QR_COMERCIO` o `CONTACTO`), `tipo_pago` (`PERSONA_A_PERSONA` o `PERSONA_A_COMERCIO`), `documento_deuda_id` (FK, nulo en pagos a contacto), `hash_pago` (hash del identificador, solo en `CONTACTO`), `cuenta_origen_id` (FK), `cuenta_destino_id` (FK), `monto_centimos`, `moneda`, `estado_actual`, `clave_idempotencia` (única), `expira_en`, `creada_en`, `actualizada_en` | Referencia ambas billeteras en `cuentas_individuales.id` y, en `QR_COMERCIO`, `documentos_deuda.id`. `QR_COMERCIO` es siempre `PERSONA_A_COMERCIO`. Guarda el importe y destino sin modificaciones posteriores. Estados: `PENDIENTE_CONFIRMACION`, `PENDIENTE`, `APROBADA`, `FALLIDA` y `EXPIRADA`. |
 | `log_transacciones` | `id` (PK), `transaccion_id` (FK), `correlacion_id`, `estado_anterior`, `estado_nuevo`, `motivo`, `codigo_motivo`, `evento_mock_id` (único cuando exista), `registrado_en` | Referencia `transacciones.id` y conserva la creación, cada cambio de estado, el resultado confirmado con el identificador del evento del mock y los eventos `DUPLICADO`. `codigo_motivo` es el código legible por máquina de los pagos fallidos o expirados. No almacena credenciales ni datos de autenticación. El log no se sobrescribe ni elimina. |
 
-El QR de prueba lo genera el comercio autenticado por documento de deuda y es el único tipo de QR del MVP. Contiene `{"version":2,"comercio_id":"<id comercio>","documento_deuda_id":"<id documento>","documento_hash":"<hash SHA-256 de 64 caracteres hexadecimales>"}`. Los identificadores y el hash se generan al precargar el documento; leer el QR no crea un comercio ni una deuda. El hash se obtiene de un valor aleatorio por documento, se guarda en `documentos_deuda.hash_qr` y se valida por coincidencia exacta junto con ambos identificadores. No se revierte para recuperar información ni autoriza por sí solo el pago. El QR no contiene monto, saldo ni credenciales: el monto se obtiene de SQLite y no puede editarlo el pagador. No se implementa un administrador de QR ni de documentos.
+El pago pertenece a una de dos modalidades. El **pago QR comercio** solo se hace con el QR de prueba que genera el comercio autenticado por documento de deuda. El **pago a contacto** (persona a persona o persona a comercio) reutiliza el mismo identificador, pero lo genera el servidor a partir del contacto elegido por el pagador (DNI, celular o RUC), sin escanear QR. Contrato común: `{"version":2,"origen":"QR_COMERCIO"|"CONTACTO","destinatario_id":"<id del comercio o del cliente>","documento_deuda_id":"<id documento, solo QR_COMERCIO>","hash":"<hash SHA-256 de 64 caracteres hexadecimales>"}`. En `QR_COMERCIO`, los identificadores y el hash se generan al precargar el documento; leer el QR no crea un comercio ni una deuda. El hash se obtiene de un valor aleatorio por documento, se guarda en `documentos_deuda.hash_qr` y se valida por coincidencia exacta junto con los identificadores. En `CONTACTO`, el hash se calcula sobre el destinatario, el monto y el pagador, se guarda en `transacciones.hash_pago` y se valida igual. El hash no se revierte para recuperar información ni autoriza por sí solo el pago. El identificador no contiene saldo ni credenciales; en `QR_COMERCIO` el monto se obtiene de SQLite y no puede editarlo el pagador. No se implementa un administrador de QR ni de documentos.
 
 ### Flujo de datos de esta historia
 
@@ -41,7 +41,7 @@ El QR de prueba lo genera el comercio autenticado por documento de deuda y es el
 
 ### Límites de esta entrega
 
-- El alcance se limita a seis criterios y seis pasos: QR de comercio y documento, validación y reserva de deuda, pago mock, persistencia, protección de duplicados y consulta responsive.
+- El alcance se limita a seis criterios y seis pasos del pago de persona a comercio: QR de comercio y documento, validación y reserva de deuda, pago mock, persistencia, protección de duplicados y consulta responsive. El pago de persona a persona sigue los mismos pasos 2 a 6 sin documento ni deuda.
 - Se precargan billeteras, comercios, documentos con sus hashes QR y saldos de prueba. El cliente y el comercio ingresan con la autenticación de [W1](./user-onboarding-mvp-completion.sp.md) (cliente con DNI, comercio con RUC); no se implementan altas o edición de comercios y deudas, pagos parciales ni pantallas de administración del mock.
 - La validación de la deuda autoriza iniciar el pago; solo la confirmación `APROBADA` del mock persistida aprueba la transacción y marca la deuda como `PAGADA`. Son momentos distintos y ninguno dispara un extorno.
 - Se adopta la opción 1: extornos y devoluciones fuera del MVP, tanto antes como después de la aprobación. No se incorporan reclamos, quejas ni disputas.
@@ -51,12 +51,13 @@ El QR de prueba lo genera el comercio autenticado por documento de deuda y es el
 
 ## Reutilización con W2
 
-Esta historia y [W2: Pago al comercio por QR, confirmación e historial](./payer-low-value-payment-confirmation.sp.md) describen un solo flujo: W2 cubre la experiencia del pagador (intención, confirmación, comprobante e historial) y esta historia el documento de deuda, la reserva, el mock y la persistencia. Comparten lo siguiente.
+Esta historia y [W2: Pago de persona a persona o a comercio](./payer-low-value-payment-confirmation.sp.md) describen un solo flujo de pago con dos tipos: W2 cubre la experiencia del pagador (intención, confirmación, comprobante e historial) para ambos tipos, y esta historia el documento de deuda, la reserva, el mock y la persistencia del pago a comercio. Comparten lo siguiente.
 
 | Aspecto | Definición única |
 |---|---|
-| QR | Un solo tipo: QR por documento de deuda, generado por el comercio. Solo identifica y nunca autoriza el pago. |
-| Roles | `CLIENTE` (paga; ingresa con DNI) y `COMERCIO` (genera el QR y recibe; ingresa con RUC), con la autenticación y la sesión de 300 s de W1. |
+| Modalidades y tipos de pago | `QR_COMERCIO` (siempre persona a comercio, solo con el QR que genera el comercio, monto fijo) y `CONTACTO` (persona a persona o persona a comercio, destinatario por DNI, celular o RUC, monto ingresado). Tipos: `PERSONA_A_PERSONA` y `PERSONA_A_COMERCIO`. |
+| Identificador de pago | Un solo contrato con hash, común a ambas modalidades: en `QR_COMERCIO` lo genera el comercio; en `CONTACTO` lo genera el servidor desde el contacto. Solo identifica y nunca autoriza el pago. |
+| Roles | `CLIENTE` (paga y puede recibir; ingresa con DNI) y `COMERCIO` (genera el QR y recibe; ingresa con RUC), con la autenticación y la sesión de 300 s de W1. |
 | Billeteras | Cada billetera es una fila de `cuentas_individuales`; solo `ACTIVE` paga o recibe. |
 | Montos | PEN en céntimos; el monto lo fija el documento; el límite por operación de W1 aplica a cada pago. |
 | Estados de pago | `PENDIENTE_CONFIRMACION`, `PENDIENTE`, `APROBADA`, `FALLIDA` y `EXPIRADA`. |
