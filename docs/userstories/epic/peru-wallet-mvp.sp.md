@@ -2,7 +2,7 @@
 
 ## Resumen
 
-Lanzar un MVP de wallet enfocado en Perú que reduzca la fricción en checkout y acelere el onboarding para comportamientos de pago frecuentes y de bajo monto. La épica prioriza velocidad de salida a mercado sin perder confianza del usuario, con confirmaciones claras, manejo confiable de estados y límites alineados a cumplimiento.
+Construir durante la hackatón una demostración de wallet en modo prueba, enfocada en Perú y desarrollada con apoyo de IA. Debe mostrar registro, ingreso y los recorridos de pago definidos por las historias, con estados y mensajes claros, sin dinero ni documentos de personas. Los objetivos de lanzamiento siguientes se conservan como referencias de negocio para una evolución posterior, no como compromisos medibles durante la hackatón.
 
 ## Problema y oportunidad
 
@@ -10,7 +10,7 @@ La caída en checkout es alta y el onboarding es lento para personas que hacen t
 
 ## Objetivos
 
-En un trimestre, lanzar el MVP de wallet y lograr:
+Como referencia para un futuro lanzamiento en un trimestre:
 
 - Reducir la caída en checkout de 30% a 8%.
 - Reducir el tiempo de finalización de onboarding de 8 minutos a 3 minutos.
@@ -27,6 +27,7 @@ En un trimestre, lanzar el MVP de wallet y lograr:
 ### Incluye
 
 - Flujo de onboarding de wallet para el segmento MVP en Perú.
+- En [W1: Registro y activación](../user-stories/user-onboarding-mvp-completion.sp.md), registro e ingreso con contraseña o Google conectado mediante cuentas de prueba autorizadas. La verificación de documentos y la biometría se simulan y se identifican como tales; no sustituyen el ingreso ni activan cuentas automáticamente.
 - Flujos núcleo de pago para transferencias de bajo monto y cobro a comercios con QR.
 - Visibilidad de confirmación y estado de pago para usuarios y comercios.
 - Instrumentación base del funnel de checkout, finalización de onboarding y activación al mes 3.
@@ -37,8 +38,11 @@ En un trimestre, lanzar el MVP de wallet y lograr:
 - Programas avanzados de lealtad o mecánicas de crecimiento no esenciales.
 - Paridad funcional completa entre todos los proveedores/bancos externos desde el día uno.
 - Exposición de APIs de pago abiertas y autoservicio para terceros.
+- Para la hackatón: lanzamiento comercial, uso de dinero o documentos de personas, captura biométrica e integración de proveedores para verificar identidad. Una API biométrica no es una dependencia de W1.
 
 ## Métricas de éxito
+
+Para la hackatón se debe demostrar el recorrido en modo prueba y los criterios de cada historia. W1 exige registro persistente, ingreso, acceso por estado, rechazo de duplicados y sesión máxima de cinco minutos. Los siguientes son objetivos de negocio para una evolución posterior, no evidencia de resultados de la demostración:
 
 - MVP de wallet lanzado dentro de un trimestre.
 - La caída en checkout baja de 30% a 8%.
@@ -49,7 +53,7 @@ En un trimestre, lanzar el MVP de wallet y lograr:
 ## Supuestos y restricciones
 
 - El ecosistema es multirriel; el MVP no debe asumir un único riel de procesamiento de extremo a extremo.
-- Las integraciones reales son contractuales y con habilitaciones operativas; el alta de proveedores no es autoservicio inmediato.
+- Para un futuro lanzamiento comercial, las integraciones de pago son contractuales y requieren habilitaciones operativas; no son requisito de la demostración en modo prueba.
 - Los límites por proveedor pueden estar por debajo del máximo regulatorio; el producto y los mensajes UX deben contemplarlo.
 - El producto debe sostener la expectativa operativa de pagos inmediatos con alias (24x7x365).
 - El rango de MAU (1,000-2,000) y el objetivo de CAC (PEN 10) son umbrales de negocio definidos por el Product Owner.
@@ -57,6 +61,7 @@ En un trimestre, lanzar el MVP de wallet y lograr:
 ## Dependencias y riesgos
 
 - Dependencia: los partners de adquirencia/gateway seleccionados para QR y procesamiento wallet son necesarios para preparar el lanzamiento.
+- Dependencia de W1: configuración de Google, cuentas de prueba autorizadas y direcciones de retorno permitidas, con claves fuera del repositorio. Cancelaciones y fallos no deben crear sesión; la sesión de Google no amplía los cinco minutos de la billetera.
 - Riesgo: reintentos sin idempotencia robusta pueden generar duplicidad financiera y desvíos de conciliación.
 - Riesgo: transiciones asíncronas del estado de pago pueden deteriorar la confianza si la confirmación no es clara.
 - Riesgo: el manejo operativo/legal de reversos y disputas debe ser explícito porque la cancelación unilateral de P2P no está garantizada de forma uniforme.
