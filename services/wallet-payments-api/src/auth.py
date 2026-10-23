@@ -14,6 +14,7 @@ from pathlib import Path
 
 SESSION_SECONDS = 300
 MAX_FAILED_ATTEMPTS = 5
+LOOKUP_LIMIT = 10
 LOCKOUT_SECONDS = 300
 MIN_PASSWORD_LENGTH = 8
 MAX_PASSWORD_LENGTH = 128
@@ -45,13 +46,13 @@ def has_valid_ruc_check_digit(digits):
 def normalize_document(value, role):
     if not isinstance(value, str) or not isinstance(role, str) or role not in ROLE_DIGITS:
         return None
-    code = value.strip().upper()
-    match = re.fullmatch(rf"TEST-(\d{{{ROLE_DIGITS[role]}}})", code)
-    if not match:
+    # El prefijo TEST- solo lo exige el mock; se tolera al escribirlo pero no se guarda.
+    digits = value.strip().upper().removeprefix("TEST-")
+    if not re.fullmatch(rf"\d{{{ROLE_DIGITS[role]}}}", digits):
         return None
-    if role == "merchant" and not has_valid_ruc_check_digit(match.group(1)):
+    if role == "merchant" and not has_valid_ruc_check_digit(digits):
         return None
-    return code
+    return digits
 
 
 def normalize_email(value):
@@ -71,6 +72,29 @@ def normalize_phone(value):
 
 def is_valid_password(value):
     return isinstance(value, str) and MIN_PASSWORD_LENGTH <= len(value) <= MAX_PASSWORD_LENGTH
+
+
+def classify_identifier(value):
+    """Devuelve (tipo, valor normalizado) para un celular, DNI o RUC; None si no encaja."""
+    if not isinstance(value, str):
+        return None
+    compact = re.sub(r"[\s-]", "", value.strip().upper().removeprefix("TEST-"))
+    compact = compact.removeprefix("+51")
+    if re.fullmatch(r"9\d{8}", compact):
+        return "phone", f"+51{compact}"
+    if re.fullmatch(r"\d{8}", compact):
+        return "dni", compact
+    if re.fullmatch(r"\d{11}", compact) and has_valid_ruc_check_digit(compact):
+        return "ruc", compact
+    return None
+
+
+def mask_identifier(kind, value):
+    if kind == "phone":
+        return f"celular ••• ••• {value[-3:]}"
+    if kind == "dni":
+        return f"DNI ••••{value[-4:]}"
+    return f"RUC •••••••{value[-4:]}"
 
 
 def hash_password(password):
@@ -144,6 +168,16 @@ class AccountStore:
                 )
                 """
             )
+            db.execute("UPDATE accounts SET document = substr(document, 6) WHERE document LIKE 'TEST-%'")
+            db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS payment_recipients (
+                    payment_id TEXT PRIMARY KEY,
+                    label TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+                """
+            )
 
     @contextmanager
     def _connect(self):
@@ -170,6 +204,13 @@ class AccountStore:
         if expires_at is not None:
             account["sessionSecondsLeft"] = max(0, math.ceil(expires_at - self._clock()))
         return account
+
+    def _open_session(self, row):
+        token = secrets.token_urlsafe(32)
+        expires_at = self._clock() + SESSION_SECONDS
+        with self._state_lock:
+            self._sessions[self._digest(token)] = (row["id"], expires_at)
+        return token, self._public(row, expires_at)
 
     def register(self, payload, create_kyc):
         fields = validate_registration(payload)
@@ -210,7 +251,7 @@ class AccountStore:
                 row = db.execute(
                     "SELECT * FROM accounts WHERE document = ?", (fields["document"],)
                 ).fetchone()
-        return self._public(row)
+        return self._open_session(row)
 
     def login(self, role, identifier, password, refresh_status=None):
         if (
@@ -251,11 +292,7 @@ class AccountStore:
                     db.execute("UPDATE accounts SET status = ? WHERE id = ?", (status, row["id"]))
                     row = db.execute("SELECT * FROM accounts WHERE id = ?", (row["id"],)).fetchone()
 
-        token = secrets.token_urlsafe(32)
-        expires_at = self._clock() + SESSION_SECONDS
-        with self._state_lock:
-            self._sessions[self._digest(token)] = (row["id"], expires_at)
-        return token, self._public(row, expires_at)
+        return self._open_session(row)
 
     def get_session(self, token):
         if not token:
@@ -277,18 +314,68 @@ class AccountStore:
             with self._state_lock:
                 self._sessions.pop(self._digest(token), None)
 
+    def find_recipient(self, identifier, payer):
+        parsed = classify_identifier(identifier)
+        if parsed is None:
+            raise AuthError("INVALID_RECIPIENT", 400)
+        kind, value = parsed
+        key = f"lookup:{payer['role']}:{payer['document']}"
+        self._check_lockout(key, LOOKUP_LIMIT)
+
+        if kind == "phone":
+            query, params = "SELECT * FROM accounts WHERE phone = ?", (value,)
+        else:
+            role = "person" if kind == "dni" else "merchant"
+            query, params = "SELECT * FROM accounts WHERE document = ? AND role = ?", (value, role)
+        with self._connect() as db:
+            row = db.execute(query, params).fetchone()
+        # Un destinatario inexistente o no activo se informa igual para no revelar cuál es el caso.
+        if row is None or row["status"] != "ACTIVE":
+            self._record_failure(key)
+            raise AuthError("RECIPIENT_NOT_FOUND", 404)
+        if row["document"] == payer["document"] and row["role"] == payer["role"]:
+            raise AuthError("SELF_PAYMENT", 400)
+
+        who = "Cliente" if row["role"] == "person" else "Comercio"
+        return {
+            "role": row["role"],
+            "kind": kind,
+            "label": f"{who} · {mask_identifier(kind, value)}",
+        }
+
+    def record_payment_recipient(self, payment_id, label):
+        with self._connect() as db:
+            db.execute(
+                "INSERT OR IGNORE INTO payment_recipients (payment_id, label, created_at) VALUES (?, ?, ?)",
+                (payment_id, label, int(self._clock())),
+            )
+
+    def recipient_labels(self, payment_ids):
+        ids = list(payment_ids)
+        labels = {}
+        with self._connect() as db:
+            for start in range(0, len(ids), 500):
+                chunk = ids[start:start + 500]
+                marks = ",".join("?" * len(chunk))
+                for row in db.execute(
+                    f"SELECT payment_id, label FROM payment_recipients WHERE payment_id IN ({marks})",
+                    chunk,
+                ):
+                    labels[row["payment_id"]] = row["label"]
+        return labels
+
     def _recent_failures(self, key):
         cutoff = self._clock() - LOCKOUT_SECONDS
         return [moment for moment in self._failures.get(key, []) if moment > cutoff]
 
-    def _check_lockout(self, key):
+    def _check_lockout(self, key, limit=MAX_FAILED_ATTEMPTS):
         with self._state_lock:
             recent = self._recent_failures(key)
             if recent:
                 self._failures[key] = recent
             else:
                 self._failures.pop(key, None)
-            if len(recent) >= MAX_FAILED_ATTEMPTS:
+            if len(recent) >= limit:
                 raise AuthError("TOO_MANY_ATTEMPTS", 429)
 
     def _record_failure(self, key):

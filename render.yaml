@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: wallet-grupo3
+    runtime: python
+    plan: free
+    buildCommand: echo "sin dependencias externas"
+    startCommand: python services/wallet-payments-api/src/server.py
+    healthCheckPath: /
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: WALLET_COOKIE_SECURE
+        value: "1"

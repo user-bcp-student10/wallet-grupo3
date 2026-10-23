@@ -1,6 +1,7 @@
 """Serve the payer prototype through a fixed group-3 wallet mock adapter."""
 
 import json
+import os
 from http.cookies import CookieError, SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,6 +11,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import parse_qs, urlsplit
 
 import auth
+import receipt_pdf
 
 
 APP_DIR = Path(__file__).resolve().parents[3] / "apps" / "payer-web"
@@ -22,6 +24,8 @@ VALID_PAYMENT_STATES = {"PENDING", "SUCCEEDED", "REJECTED", "REVERSED"}
 VALID_RECIPIENTS = {"contact-demo", "merchant-demo"}
 PAYMENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,200}$")
 SESSION_COOKIE = "wallet_session"
+# El mock solo admite estos dos destinos; el número identifica a quién va dirigido el pago en esta app.
+MOCK_RECIPIENT_BY_ROLE = {"person": "contact-demo", "merchant": "merchant-demo"}
 
 _accounts = None
 
@@ -211,6 +215,56 @@ def get_payment_receipt(payment_id):
     return status, {key: receipt[key] for key in required}
 
 
+def get_receipt_pdf(payment_id):
+    status, receipt = get_payment_receipt(payment_id)
+    if status != 200:
+        code = receipt.get("error") if isinstance(receipt, dict) else None
+        return status, None, {"error": code if isinstance(code, str) else "RECEIPT_UNAVAILABLE"}
+    label = accounts().recipient_labels([payment_id]).get(payment_id)
+    try:
+        return 200, receipt_pdf.build_receipt_pdf(receipt, recipient_label=label), None
+    except receipt_pdf.InvalidReceipt as error:
+        raise WalletProxyError("Invalid receipt response") from error
+
+
+def label_payments(items):
+    labels = accounts().recipient_labels([item["id"] for item in items])
+    return [{**item, "recipientLabel": labels[item["id"]]} if item["id"] in labels else item for item in items]
+
+
+def label_result(result):
+    if isinstance(result, dict) and isinstance(result.get("id"), str):
+        return label_payments([result])[0]
+    return result
+
+
+def label_receipt(receipt):
+    label = accounts().recipient_labels([receipt["paymentId"]]).get(receipt["paymentId"])
+    return {**receipt, "recipientLabel": label} if label else receipt
+
+
+def recipient_from_payload(payload, account):
+    """Traduce recipientNumber a un destino del mock, resolviéndolo de nuevo en el servidor."""
+    if not isinstance(payload, dict) or "recipientNumber" not in payload:
+        return payload, None
+    if "recipient" in payload:
+        raise ValueError("INVALID_FIELDS")
+    found = accounts().find_recipient(payload["recipientNumber"], account)
+    rest = {key: value for key, value in payload.items() if key != "recipientNumber"}
+    rest["recipient"] = MOCK_RECIPIENT_BY_ROLE[found["role"]]
+    return rest, found
+
+
+def remember_recipient(result, found):
+    if found is None or not isinstance(result, dict):
+        return result
+    payment_id = result.get("id") or result.get("paymentId")
+    if not isinstance(payment_id, str) or not PAYMENT_ID_PATTERN.fullmatch(payment_id):
+        return result
+    accounts().record_payment_recipient(payment_id, found["label"])
+    return {**result, "recipientLabel": found["label"]} if "id" in result else result
+
+
 def parse_json_request(handler):
     content_type = handler.headers.get("Content-Type", "").split(";", 1)[0].strip()
     if content_type != "application/json":
@@ -240,13 +294,16 @@ def result_for_get(path, query):
         return 200, get_demo_wallet()
     if path == "/api/payments":
         wallet_id = parse_qs(query).get("walletId", ["wallet-demo"])[0]
-        return get_payment_history(wallet_id)
+        status, items = get_payment_history(wallet_id)
+        return status, label_payments(items)
     receipt_id = payment_id_from_path(path, "/receipt")
     if receipt_id:
-        return get_payment_receipt(receipt_id)
+        status, receipt = get_payment_receipt(receipt_id)
+        return status, label_receipt(receipt) if status == 200 else receipt
     payment_id = payment_id_from_path(path)
     if payment_id:
-        return get_payment(payment_id)
+        status, result = get_payment(payment_id)
+        return status, label_result(result)
     raise ValueError("NOT_FOUND")
 
 
@@ -261,7 +318,7 @@ def create_kyc(document):
         status, kyc = request_mock(
             "POST",
             "/kyc/verifications",
-            payload={"documentType": "TEST", "document": document},
+            payload={"documentType": "TEST", "document": f"TEST-{document}"},
         )
     except WalletProxyError as error:
         raise auth.AuthError("KYC_UNAVAILABLE", 503) from error
@@ -301,8 +358,9 @@ def session_token(handler):
 
 
 def session_cookie(token, max_age):
+    secure = "; Secure" if os.environ.get("WALLET_COOKIE_SECURE") == "1" else ""
     return (
-        f"{SESSION_COOKIE}={token}; Max-Age={max_age}; Path=/; HttpOnly; SameSite=Strict"
+        f"{SESSION_COOKIE}={token}; Max-Age={max_age}; Path=/; HttpOnly; SameSite=Strict{secure}"
     )
 
 
@@ -326,6 +384,10 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
             if self._account() is None:
                 self._send_json(401, {"error": "UNAUTHENTICATED"})
                 return
+            pdf_payment_id = payment_id_from_path(parsed_path.path, "/receipt.pdf")
+            if pdf_payment_id:
+                self._send_receipt_pdf(pdf_payment_id)
+                return
             try:
                 status, payload = result_for_get(parsed_path.path, parsed_path.query)
             except ValueError as error:
@@ -338,14 +400,18 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
 
     def _register(self):
         try:
-            account = accounts().register(parse_json_request(self), create_kyc)
+            token, account = accounts().register(parse_json_request(self), create_kyc)
         except auth.AuthError as error:
             self._send_json(error.status, {"error": error.code})
             return
         except ValueError as error:
             self._send_json(*json_error_for_value(error))
             return
-        self._send_json(201, account)
+        self._send_json(
+            201,
+            account,
+            [("Set-Cookie", session_cookie(token, auth.SESSION_SECONDS))],
+        )
 
     def _login(self):
         try:
@@ -397,11 +463,18 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
         if account["role"] != "person" or account["status"] != "ACTIVE":
             self._send_json(403, {"error": "PAYMENT_NOT_ALLOWED"})
             return
+        if path == "/api/recipients/resolve":
+            self._resolve_recipient(account)
+            return
         if path == "/api/payments":
             idempotency_key = self.headers.get("Idempotency-Key", "")
             try:
                 payload = parse_json_request(self)
+                payload, found = recipient_from_payload(payload, account)
                 status, result = create_payment(payload, idempotency_key)
+                result = remember_recipient(result, found)
+            except auth.AuthError as error:
+                status, result = error.status, {"error": error.code}
             except ValueError as error:
                 status, result = json_error_for_value(error)
             except WalletProxyError:
@@ -414,6 +487,7 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
                 if payment_id is None:
                     raise ValueError("INVALID_PAYMENT_ID")
                 status, result = resolve_payment(payment_id)
+                result = label_result(result)
             except ValueError as error:
                 status, result = json_error_for_value(error)
             except WalletProxyError:
@@ -421,6 +495,41 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
             self._send_json(status, result)
             return
         self._send_json(404, {"error": "NOT_FOUND"})
+
+    def _resolve_recipient(self, account):
+        try:
+            payload = parse_json_request(self)
+            if not isinstance(payload, dict) or set(payload) != {"identifier"}:
+                raise ValueError("INVALID_REQUEST")
+            found = accounts().find_recipient(payload["identifier"], account)
+        except auth.AuthError as error:
+            self._send_json(error.status, {"error": error.code})
+            return
+        except ValueError as error:
+            self._send_json(*json_error_for_value(error))
+            return
+        self._send_json(200, found)
+
+    def _send_receipt_pdf(self, payment_id):
+        try:
+            status, pdf, error = get_receipt_pdf(payment_id)
+        except ValueError as exc:
+            self._send_json(*json_error_for_value(exc))
+            return
+        except WalletProxyError:
+            self._send_json(502, {"error": "WALLET_SERVICE_UNAVAILABLE"})
+            return
+        if pdf is None:
+            self._send_json(status, error)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Length", str(len(pdf)))
+        self.send_header("Content-Disposition", f'attachment; filename="comprobante-{payment_id}.pdf"')
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(pdf)
 
     def _send_json(self, status, payload, extra_headers=()):
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -436,7 +545,7 @@ class WalletWebHandler(SimpleHTTPRequestHandler):
 
 
 def main():
-    address = ("127.0.0.1", 8000)
+    address = (os.environ.get("HOST", "127.0.0.1"), int(os.environ.get("PORT", "8000")))
     server = ThreadingHTTPServer(address, WalletWebHandler)
     print(f"Payer web listo en http://{address[0]}:{address[1]}")
     try:

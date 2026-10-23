@@ -847,67 +847,44 @@ dd {
   font-variant-numeric: tabular-nums;
 }
 
-.recipient-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.recipient-result {
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
-}
-
-.recipient-option {
-  position: relative;
-  margin: 0 !important;
-  cursor: pointer;
-}
-
-.recipient-option input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.recipient-card {
-  padding: 0.9rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.1rem;
-  border: 2px solid var(--line);
+  border: 2px solid var(--blue);
   border-radius: 1rem;
-  background: #fff;
-  text-align: center;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.recipient-card .material-icons {
-  margin-bottom: 0.2rem;
-  color: var(--blue);
-  font-size: 1.6rem;
-}
-
-.recipient-card small {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 500;
-}
-
-.recipient-option:hover .recipient-card {
-  transform: translateY(-1px);
-  border-color: #b9cdf3;
-}
-
-.recipient-option input:checked + .recipient-card {
-  border-color: var(--blue);
   background: #eef4ff;
-  box-shadow: 0 8px 20px rgba(47, 111, 224, 0.2);
+  box-shadow: 0 8px 20px rgba(47, 111, 224, 0.15);
 }
 
-.recipient-option input:checked + .recipient-card .material-icons {
+.recipient-result[hidden] {
+  display: none;
+}
+
+.recipient-result > .material-icons:first-child {
   color: var(--magenta);
+  font-size: 1.7rem;
 }
 
-.recipient-option input:focus-visible + .recipient-card {
-  outline: 3px solid #ffd166;
-  outline-offset: 2px;
+.recipient-result-text {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+}
+
+.recipient-result-text strong {
+  overflow-wrap: anywhere;
+}
+
+.recipient-result-text small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.recipient-result-check {
+  color: #1f9d55;
 }
 
 .quick-amounts {
@@ -1075,8 +1052,22 @@ dd {
   white-space: nowrap;
 }
 
-.history-item .p-tag {
+.history-actions {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.history-actions .p-button-icon-only {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--danger);
+}
+
+.receipt-actions {
+  margin-top: 0.9rem;
 }
 
 .p-tag {
@@ -1279,10 +1270,6 @@ dd {
     font-size: 0.72rem;
   }
 
-  .recipient-card {
-    padding: 0.75rem 0.5rem;
-  }
-
   .summary-list {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1295,7 +1282,7 @@ dd {
     text-align: left;
   }
 
-  .history-item .p-tag {
+  .history-actions {
     justify-self: start;
     grid-column: 2;
   }
