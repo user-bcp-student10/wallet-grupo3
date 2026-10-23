@@ -49,6 +49,23 @@ El QR de prueba se genera por documento, no como QR estático de una cuenta. Con
 - Una confirmación pendiente o ausente mantiene la deuda reservada; no se libera por tiempo ni se asume un fallo. No se implementan expiración automática, cancelación ni recuperación automática del envío al mock en esta entrega.
 - Esta sección documenta el comportamiento mínimo y las cuatro tablas; no crea archivos SQLite, migraciones ni código de implementación.
 
+## Reutilización con W2
+
+Esta historia comparte con [W2: Pago a contacto, confirmación e historial](./payer-low-value-payment-confirmation.sp.md) la base de pagos y se diferencia en que el destino lo determina un documento de deuda y no un contacto.
+
+| Aspecto | Componente compartido con W2 | Diferencia en esta historia |
+|---|---|---|
+| Identificación por QR | El QR solo identifica al destinatario y no autoriza el pago; el servidor resuelve el hash a una cuenta activa y rechaza lo inválido. | El hash identifica un documento de deuda (`documentos_deuda.hash_qr`) y no una cuenta permanente. |
+| Cuentas y PEN | `cuentas_individuales`, solo moneda `PEN`, rechazo de pago a la propia cuenta y de cuentas no activas. | Los saldos son informativos; W2 valida y mueve saldo. |
+| Sesión | Pago con sesión autenticada y vigente. | Identidad de prueba autorizada. |
+| Transacción | Tabla `transacciones` con referencia, pagador, destinatario, monto en PEN y estado. | Añade `documento_deuda_id` y `clave_idempotencia`; estados `PENDIENTE`, `APROBADA` y `FALLIDA`. |
+| Registro de cambios | Un registro inmutable de creación y de cada cambio de estado, con correlación y sin datos sensibles. | `historial_transacciones` cumple el rol de `log_transacciones` de W2; se unificará el nombre al implementar. |
+| Proveedor simulado | Pago enviado a un proveedor simulado sin transferencias reales; el resultado definitivo se muestra solo tras recibirlo. | El mock puede devolver `PENDIENTE` además de éxito o fallo. |
+| Idempotencia y atomicidad | Una confirmación repetida devuelve el resultado existente; el cambio de estado se confirma de forma atómica. | La reserva atómica se aplica a la deuda (`PENDIENTE -> EN_PROCESO`). |
+| Consulta | Estado, referencia, monto, fecha y destinatario del pago. | Se añaden comercio, documento y estado de la deuda. |
+
+Los dos flujos deben usar los mismos estados de pago, el mismo servicio de proveedor simulado y la misma referencia y clave de idempotencia por intento.
+
 ## Contexto
 
 - Épica: [MVP de wallet en Perú](../epic/peru-wallet-mvp.sp.md).
@@ -65,3 +82,5 @@ El QR de prueba se genera por documento, no como QR estático de una cuenta. Con
 ## Preguntas abiertas
 
 - ¿Qué cuentas, comercios, documentos, hashes QR e identidades de prueba se precargarán para validar los tres escenarios del mock?
+- ¿Se unifican los estados de pago con W2 (`PENDING_CONFIRMATION`, éxito, fallo, expirado) o se mantienen los de esta historia?
+- ¿Los pagos de deuda mueven saldo como en W2 o los saldos siguen siendo informativos?
